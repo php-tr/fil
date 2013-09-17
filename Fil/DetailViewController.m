@@ -15,21 +15,13 @@
 
 @implementation DetailViewController
 
-- (void)dealloc
-{
-    [_detailItem release];
-    [_detailDescriptionLabel release];
-    [_masterPopoverController release];
-    [super dealloc];
-}
-
 #pragma mark - Managing the detail item
 
 - (void)setDetailItem:(id)newDetailItem
 {
     if (_detailItem != newDetailItem) {
-        [_detailItem release];
-        _detailItem = [newDetailItem retain];
+        // [_detailItem release];
+        // _detailItem = [newDetailItem retain];
 
         // Update the view.
         [self configureView];
