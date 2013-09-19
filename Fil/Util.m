@@ -12,9 +12,7 @@
 
 + (NSString *) getDbPath
 {
-    NSArray *documentPaths = NSSearchPathForDirectoriesInDomains(NSDocumentationDirectory, NSUserDomainMask, YES);
-    NSString *documentDir = [documentPaths objectAtIndex:0];
-    
+    NSString *documentDir = [self getDocumentPath];
     NSString *databasePath = [documentDir stringByAppendingPathComponent:DATABASE_FILE];
     
     NSFileManager *fm = [NSFileManager defaultManager];
@@ -30,6 +28,12 @@
     }
     
     return databasePath;
+}
+
++ (NSString *) getDocumentPath
+{
+    NSArray *documentPaths = NSSearchPathForDirectoriesInDomains(NSDocumentationDirectory, NSUserDomainMask, YES);
+    return [[documentPaths objectAtIndex:0] stringByDeletingLastPathComponent];
 }
 
 @end

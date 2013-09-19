@@ -25,5 +25,6 @@
 @interface Util : NSObject
 
 + (NSString *) getDbPath;
++ (NSString *) getDocumentPath;
 
 @end

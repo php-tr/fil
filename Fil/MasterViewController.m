@@ -7,8 +7,9 @@
 //
 
 #import "MasterViewController.h"
+#import "ReaderViewController.h"
 
-@interface MasterViewController()
+@interface MasterViewController() <ReaderViewControllerDelegate>
 {
     NSMutableArray *_objects;
 }
@@ -28,6 +29,7 @@
         }
         
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleMagazineList:) name:NOTIFICATION_MAGAZINE_LIST_SYNCED object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleDownloadComplete:) name:NOTIFICATION_MAGAZINE_DOWNLOAD_COMPLETE object:nil];
     }
     
     return self;
@@ -118,8 +120,6 @@
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellIdentifier];
     }
 
-    NSDate *object = _objects[indexPath.row];
-    cell.textLabel.text = [object description];
     return cell;
 }
 
@@ -131,13 +131,14 @@
     customView.backgroundColor = UICOLOR_FROM_HEX(0x5398cf);
     customView.layer.masksToBounds = NO;
     
-    UIImage *thumbnail = [UIImage imageNamed:@"Thumbnail.png"];
+    NSURL *url = [NSURL URLWithString:data.imageUrl];
+    UIImage *thumbnail = [UIImage imageWithData:[NSData dataWithContentsOfURL:url]]; // [UIImage imageNamed:@"Thumbnail.png"];
     [thumbnail stretchableImageWithLeftCapWidth:0 topCapHeight:0];
     UIImageView *imageView = [[UIImageView alloc] initWithImage:thumbnail];
-    [imageView setFrame:CGRectMake(10.f, 16.f, thumbnail.size.width, thumbnail.size.height)];
+    [imageView setFrame:CGRectMake(10.f, 5.f, thumbnail.size.width * 0.3f, thumbnail.size.height * 0.3f)];
     [customView addSubview:imageView];
     
-    UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(70.f, 25.f, 160.f, 30.f)];
+    UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(70.f, 25.f, 170.f, 30.f)];
     [label setBackgroundColor:[UIColor clearColor]];
     [label setTextColor:[UIColor whiteColor]];
     [label setText:data.name];
@@ -163,8 +164,21 @@
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    NSDate *object = _objects[indexPath.row];
-    if (UI_IDIOM_PHONE)
+    MagazineData *magazineData = (MagazineData *) _objects[indexPath.row];
+    FIL_LOG(@"Release Id %d.", magazineData.releaseId);
+    [tableView deselectRowAtIndexPath:indexPath animated:NO];
+    
+    if (!magazineData.isPdfDownloaded)
+    {
+        NSDictionary *dict = @{@"magazineId": [NSNumber numberWithInt:magazineData.id]};
+        [[NSNotificationCenter defaultCenter] postNotificationName:NOTIFICATION_MAGAZINE_DOWNLOAD object:nil userInfo:dict];
+    }
+    else
+    {
+        [self openPdf:magazineData];
+    }
+    
+    /*if (UI_IDIOM_PHONE)
     {
 	    if (!self.detailViewController)
         {
@@ -176,7 +190,7 @@
     else
     {
         self.detailViewController.detailItem = object;
-    }
+    }*/
 }
 
 - (void) handleMagazineList: (NSNotification *) notification
@@ -200,6 +214,27 @@
     [self.tableView insertRowsAtIndexPaths:paths withRowAnimation:UITableViewRowAnimationNone];
     
     [self.tableView endUpdates];
+}
+
+- (void) handleDownloadComplete: (NSNotification *) notification
+{
+    [self openPdf:[notification.userInfo objectForKey:@"data"]];
+}
+
+- (void) openPdf: (MagazineData *) data
+{
+    ReaderDocument *document = [ReaderDocument withDocumentFilePath:[[Util getDocumentPath] stringByAppendingPathComponent:data.pdfName] password:nil];
+    ReaderViewController *viewController = [[ReaderViewController alloc] initWithReaderDocument:document];
+    viewController.delegate = self;
+    
+    [self.navigationController setNavigationBarHidden:YES animated:YES];
+    [self.navigationController pushViewController:viewController animated:YES];
+}
+
+- (void)dismissReaderViewController:(ReaderViewController *)viewController
+{
+    [self.navigationController popViewControllerAnimated:YES];
+    [self.navigationController setNavigationBarHidden:NO animated:YES];
 }
 
 @end

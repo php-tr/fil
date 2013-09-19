@@ -13,6 +13,8 @@
 #import "DetailViewController.h"
 #import "Util.h"
 #import "MagazineData.h"
+#import "ReaderDocument.h"
+#import "ReaderViewController.h"
 
 @class DetailViewController;
 
