@@ -21,6 +21,7 @@
 
 @property (nonatomic, readonly, strong) NSMutableDictionary *magazineList;
 @property (readonly) NSUInteger magazineCount;
+@property (assign) BOOL isRefreshInProgress;
 
 + (FilMagazine *) sharedInstance;
 

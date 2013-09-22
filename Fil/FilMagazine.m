@@ -13,6 +13,7 @@
 
 @synthesize magazineList = _magazineList;
 @synthesize magazineCount = _magazineCount;
+@synthesize isRefreshInProgress = _isRefreshInProgress;
 
 + (FilMagazine *) sharedInstance
 {
@@ -34,6 +35,7 @@
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleRefreshRequest:) name:NOTIFICATION_MAGAZINE_REFRESH object:nil];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleDownloadRequest:) name:NOTIFICATION_MAGAZINE_DOWNLOAD object:nil];
         
+        _isRefreshInProgress = NO;
         _magazineList = [[NSMutableDictionary alloc] init];
         NSMutableDictionary *list = [NSMutableDictionary dictionary];
         
@@ -60,6 +62,8 @@
             data.downloadDateline = [results longLongIntForColumn:@"download_dateline"] == 0 ? 0 : [[NSDate alloc] initWithTimeIntervalSince1970:[results longLongIntForColumn:@"download_dateline"]];
             data.syncDateline = [[NSDate alloc] initWithTimeIntervalSince1970:[results longLongIntForColumn:@"sync_dateline"]];
             data.isPdfDownloadActive = NO;
+            data.isViewInited = NO;
+            data.downloadProgressPercent = 0;
             
             [_magazineList setObject:data forKey:[NSString stringWithFormat:@"%d", data.releaseId]];
             [list setObject:data forKey:[NSString stringWithFormat:@"%d", i++]];
@@ -82,6 +86,13 @@
 
 - (void) acquireRemoteData
 {
+    if (_isRefreshInProgress)
+    {
+        FIL_LOG(@"Refresh is in progress.");
+        return;
+    }
+    _isRefreshInProgress = YES;
+    
     NSURL *url = [NSURL URLWithString:CHECK_URL];
     NSURLRequest *request = [NSURLRequest requestWithURL:url];
     
@@ -130,10 +141,8 @@
             NSDictionary *responseData = [response objectAtIndex:i];
             
             NSInteger releaseId = (NSInteger) [[responseData objectForKey:@"sayi"] intValue];
-            FIL_LOG(@"Release Id is: %d", releaseId);
             if ([_magazineList objectForKey:[NSString stringWithFormat:@"%d", releaseId]] != nil)
             {
-                FIL_LOG(@"Data skipped. %d", releaseId);
                 continue;
             }
 
@@ -147,7 +156,10 @@
             magazineData.isPdfDownloaded = NO;
             magazineData.isImageDownloaded = NO;
             magazineData.downloadDateline = nil;
+            magazineData.size = [[responseData objectForKey:@"boyut"] longLongValue];
             magazineData.syncDateline = [[NSDate alloc] initWithTimeIntervalSinceNow:0];
+            magazineData.isPdfDownloadActive = NO;
+            magazineData.downloadProgressPercent = 0;
             
             [formatter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
             magazineData.releaseDate = [formatter dateFromString:[responseData objectForKey:@"tarih"]];
@@ -205,12 +217,7 @@
                         ];
                         [db close];
                         
-                        double delayInSeconds = 2.0;
-                        dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
-                        dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
-                            [[NSNotificationCenter defaultCenter] postNotificationName:NOTIFICAITON_MAGAZINE_IMAGE_DONWLOAD_COMPLETE object:nil userInfo:@{@"magazineData": magazineData}];
-                        });
-                        
+                        [[NSNotificationCenter defaultCenter] postNotificationName:NOTIFICAITON_MAGAZINE_IMAGE_DONWLOAD_COMPLETE object:nil userInfo:@{@"magazineData": magazineData}];
                     }
                     failure:^(AFHTTPRequestOperation *operation, NSError *error)
                     {
@@ -227,9 +234,9 @@
             [[NSNotificationCenter defaultCenter] postNotificationName:NOTIFICATION_MAGAZINE_LIST_SYNCED object:nil userInfo:list];
         }
 
-        
+        _isRefreshInProgress = NO;
     } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
-        
+        _isRefreshInProgress = NO;
     }];
     
     [process start];
@@ -271,11 +278,7 @@
         NSFileManager *fm = [NSFileManager defaultManager];
         if ([fm fileExistsAtPath:pdfPath])
         {
-            
-            [[NSNotificationCenter defaultCenter] postNotificationName:NOTIFICATION_MAGAZINE_DOWNLOAD_COMPLETE object:nil userInfo:@{@"data": data}];
-            return;
-            
-            NSError *error;
+            NSError *error = nil;
             [fm removeItemAtPath:pdfPath error:&error];
             if (error)
             {
@@ -293,6 +296,7 @@
         {
             data.isPdfDownloadActive = NO;
             data.isPdfDownloaded = YES;
+            data.downloadProgressPercent = 0;
             data.downloadDateline = [[NSDate alloc] initWithTimeIntervalSinceNow:0];
             
             FMDatabase *db = [FMDatabase databaseWithPath:[Util getDbPath]];
@@ -314,6 +318,8 @@
         failure:^(AFHTTPRequestOperation *operation, NSError *error)
         {
             data.isPdfDownloadActive = NO;
+            data.downloadProgressPercent = 0;
+            [[NSNotificationCenter defaultCenter] postNotificationName:NOTIFICATION_MAGAZINE_DOWNLOAD_FAILED object:nil userInfo:@{@"data": data}];
             FIL_LOG(@"Failed download.");
         }];
         [operation setDownloadProgressBlock:^(NSUInteger bytesRead, long long totalBytesRead, long long totalBytesExpectedToRead)
@@ -324,6 +330,7 @@
             {
                 [[NSNotificationCenter defaultCenter] postNotificationName:NOTIFICATION_MAGAZINE_DOWNLOAD_PROGRESS object:nil userInfo:@{@"percentage": [NSNumber numberWithInt:lastPercent], @"magazineData":data}];
                 lastPercent = percent;
+                data.downloadProgressPercent = percent;
             }
         }];
         operation.outputStream = [NSOutputStream outputStreamToFileAtPath:pdfPath append:NO];

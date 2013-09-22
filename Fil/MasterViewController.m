@@ -26,7 +26,7 @@
 @interface MasterViewController() <ReaderViewControllerDelegate>
 {
     NSMutableArray *_magazineDataList;
-    NSMutableArray *_viewList;
+    NSMutableDictionary *_viewList;
 }
 @end
 
@@ -44,12 +44,13 @@
         }
         
         _magazineDataList = [[NSMutableArray alloc] init];
-        _viewList = [[NSMutableArray alloc] init];
+        _viewList = [[NSMutableDictionary alloc] init];
         
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleMagazineList:) name:NOTIFICATION_MAGAZINE_LIST_SYNCED object:nil];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleDownloadComplete:) name:NOTIFICATION_MAGAZINE_DOWNLOAD_COMPLETE object:nil];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleImageDownloadComplete:) name:NOTIFICAITON_MAGAZINE_IMAGE_DONWLOAD_COMPLETE object:nil];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleDownloadProgress:) name:NOTIFICATION_MAGAZINE_DOWNLOAD_PROGRESS object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleDownloadFailed:) name:NOTIFICATION_MAGAZINE_DOWNLOAD_FAILED object:nil];
     }
     
     return self;
@@ -152,7 +153,7 @@
     UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(70.f, 25.f, 170.f, 30.f)];
     [label setBackgroundColor:[UIColor clearColor]];
     [label setTextColor:[UIColor whiteColor]];
-    [label setText:[NSString stringWithFormat:@"%d - %@", data.releaseId, data.name]];
+    [label setText:data.name];
     [label setFont:[UIFont fontWithName:FONT_NAME size:25]];
     [viewContainer addSubview:label];
     
@@ -164,10 +165,10 @@
         VK_CELL_INDICATOR_TYPE: [NSNull null]
     }];
     FIL_LOG(@"View Dict: %@", viewDict);
-    [_viewList addObject:viewDict];
+    [_viewList setObject:viewDict forKey:[NSString stringWithFormat:@"%d", indexPath.row]];
     [cell.contentView addSubview:viewContainer];
     
-    [self setIndicatorType:(data.isPdfDownloaded ? INDICATOR_TYPE_VIEW : INDICATOR_TYPE_DOWNLOAD) to:viewDict];
+    [self setIndicatorType:(data.isPdfDownloaded ? INDICATOR_TYPE_VIEW : (data.isPdfDownloadActive ? INDICATOR_TYPE_PROGRESS : INDICATOR_TYPE_DOWNLOAD)) to:viewDict];
     [self setImage:data to:viewDict];
 }
 
@@ -188,15 +189,18 @@
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     MagazineData *magazineData = (MagazineData *) _magazineDataList[indexPath.row];
-    FIL_LOG(@"Release Id %d, Pdf Download: %d.", magazineData.releaseId, magazineData.isPdfDownloaded ? 1 : 0);
     [tableView deselectRowAtIndexPath:indexPath animated:NO];
     
     if (magazineData.isPdfDownloadActive)
     {
-        [[[UIAlertView alloc] initWithTitle:NSLocalizedString(@"Done", nil) message:NSLocalizedString(@"Pdf is downloading. You cannot open it for the moment", nil) delegate:self cancelButtonTitle:NSLocalizedString(@"OK", nil) otherButtonTitles:nil, nil] show];
+        [[[UIAlertView alloc] initWithTitle:NSLocalizedString(@"Downloading", nil) message:NSLocalizedString(@"Pdf is downloading. You cannot open it for the moment", nil) delegate:self cancelButtonTitle:NSLocalizedString(@"OK", nil) otherButtonTitles:nil, nil] show];
     }
     else if (!magazineData.isPdfDownloaded)
     {
+        NSMutableDictionary *viewDict = [_viewList objectForKey:[NSString stringWithFormat:@"%d", indexPath.row]];
+        [self setIndicatorType:INDICATOR_TYPE_PROGRESS to:viewDict];
+        [self setProgress:0 to:viewDict];
+        
         NSDictionary *dict = @{@"magazineId": [NSNumber numberWithInt:magazineData.id]};
         [[NSNotificationCenter defaultCenter] postNotificationName:NOTIFICATION_MAGAZINE_DOWNLOAD object:nil userInfo:dict];
     }
@@ -224,6 +228,8 @@
 {
     NSDictionary *magazineList = notification.userInfo;
     
+    FIL_LOG(@"Magazine List Updating. %d/%d", [magazineList count], [_magazineDataList count]);
+    
     [self.tableView beginUpdates];
     
     NSMutableArray *paths = [NSMutableArray array];
@@ -231,9 +237,11 @@
     
     for (i = start; i < start + len; i++)
     {
+        FIL_LOG(@"Magazine data adding: %d", i - start);
         [_magazineDataList addObject:[magazineList objectForKey:[NSString stringWithFormat:@"%d", i - start]]];
         [paths addObject:[NSIndexPath indexPathForRow:i inSection:0]];
     }
+    FIL_LOG(@"Paths: %@", paths);
     [self.tableView insertRowsAtIndexPaths:paths withRowAnimation:UITableViewRowAnimationNone];
     
     [self.tableView endUpdates];
@@ -245,7 +253,7 @@
     NSUInteger i, len = [_magazineDataList count];
     for (i = 0; i < len; i++)
     {
-        NSMutableDictionary *cellData = [_viewList objectAtIndex:i];
+        NSMutableDictionary *cellData = [_viewList objectForKey:[NSString stringWithFormat:@"%d", i]];
         if (!cellData)
         {
             continue;
@@ -261,6 +269,27 @@
     [self openPdf:data];
 }
 
+- (void) handleDownloadFailed: (NSNotification *) notification
+{
+    MagazineData *data = [notification.userInfo objectForKey:@"data"];
+    NSUInteger i, len = [_magazineDataList count];
+    for (i = 0; i < len; i++)
+    {
+        NSMutableDictionary *cellData = [_viewList objectForKey:[NSString stringWithFormat:@"%d", i]];
+        if (!cellData)
+        {
+            continue;
+        }
+        
+        if (((MagazineData *)[_magazineDataList objectAtIndex:i]).id == data.id)
+        {
+            [self setIndicatorType:INDICATOR_TYPE_DOWNLOAD to:cellData];
+            [[[UIAlertView alloc] initWithTitle:NSLocalizedString(@"Error", nil) message:NSLocalizedString(@"Pdf download failed", nil) delegate:self cancelButtonTitle:NSLocalizedString(@"OK", nil) otherButtonTitles:nil, nil] show];
+            break;
+        }
+    }
+}
+
 - (void) handleImageDownloadComplete: (NSNotification *) notification
 {
     MagazineData *data = [notification.userInfo objectForKey:@"magazineData"];
@@ -272,7 +301,7 @@
             continue;
         }
         
-        NSMutableDictionary *cellData = [_viewList objectAtIndex:i];
+        NSMutableDictionary *cellData = [_viewList objectForKey:[NSString stringWithFormat:@"%d", i]];
         if (((MagazineData *)[_magazineDataList objectAtIndex:i]).id == data.id)
         {
             [self setImage:data to:cellData];
@@ -287,7 +316,7 @@
     NSUInteger i, len = [_magazineDataList count];
     for (i = 0; i < len; i++)
     {
-        NSMutableDictionary *cellData = [_viewList objectAtIndex:i];
+        NSMutableDictionary *cellData = [_viewList objectForKey:[NSString stringWithFormat:@"%d", i]];
         if (!cellData)
         {
             continue;
@@ -295,7 +324,6 @@
         
         if (((MagazineData *)[_magazineDataList objectAtIndex:i]).id == data.id)
         {
-            [self setIndicatorType:INDICATOR_TYPE_PROGRESS to:cellData];
             [self setProgress:[[notification.userInfo objectForKey:@"percentage"] intValue] to:cellData];
             break;
         }
@@ -309,11 +337,13 @@
     viewController.delegate = self;
     
     [self.navigationController setNavigationBarHidden:YES animated:YES];
+    [[UIApplication sharedApplication] setStatusBarHidden:YES];
     [self.navigationController pushViewController:viewController animated:YES];
 }
 
 - (void)dismissReaderViewController:(ReaderViewController *)viewController
 {
+    [[UIApplication sharedApplication] setStatusBarHidden:NO];
     [self.navigationController popViewControllerAnimated:YES];
     [self.navigationController setNavigationBarHidden:NO animated:YES];
 }
@@ -353,7 +383,7 @@
         UILabel *view = [[UILabel alloc] initWithFrame:CGRectMake(265.f, 26.f, 50.f, 30.f)];
         [view setBackgroundColor:[UIColor clearColor]];
         [view setTextColor:[UIColor whiteColor]];
-        [view setText:@"0%"];
+        [view setText:[NSString stringWithFormat:@"%d%%", data.downloadProgressPercent]];
         [view setTextAlignment:NSTextAlignmentCenter];
         [view setFont:[UIFont fontWithName:FONT_NAME size:25]];
         [view setTag:tag];
@@ -375,7 +405,8 @@
 
 - (void) setProgress: (NSInteger) percent to: (NSMutableDictionary *) dict
 {
-    [(UILabel *)[self.view viewWithTag:[[dict objectForKey:VK_CELL_INDICATOR] intValue]] setText:[NSString stringWithFormat:@"%d%%", percent]];
+    UILabel *label = (UILabel *)[self.view viewWithTag:[[dict objectForKey:VK_CELL_INDICATOR] intValue]];
+    [label setText:[NSString stringWithFormat:@"%d%%", percent]];
 }
 
 - (void) setImage: (MagazineData *) data to: (NSMutableDictionary *) dict

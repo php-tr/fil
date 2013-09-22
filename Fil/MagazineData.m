@@ -24,5 +24,7 @@
 @synthesize syncDateline = _syncDateline;
 @synthesize size = _size;
 @synthesize isPdfDownloadActive = _isPdfDownloadActive;
+@synthesize isViewInited = _isViewInited;
+@synthesize downloadProgressPercent = _downloadProgressPercent;
 
 @end

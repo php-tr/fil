@@ -21,6 +21,7 @@
 #define NOTIFICATION_MAGAZINE_REFRESH @"notificationMangazineRefresh"
 #define NOTIFICATION_MAGAZINE_DOWNLOAD @"notificationMagazineDownload"
 #define NOTIFICATION_MAGAZINE_DOWNLOAD_COMPLETE @"notificationMagazineDownloadComplete"
+#define NOTIFICATION_MAGAZINE_DOWNLOAD_FAILED @"notificationMagazineDownloadFailed"
 #define NOTIFICATION_MAGAZINE_DOWNLOAD_PROGRESS @"notificationMagazineDownloadProgress"
 #define NOTIFICAITON_MAGAZINE_IMAGE_DONWLOAD_COMPLETE @"notificationMagazineImageDownloadComplete"
 

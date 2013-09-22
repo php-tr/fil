@@ -24,5 +24,7 @@
 @property (strong) NSDate *downloadDateline;
 @property (strong) NSDate *syncDateline;
 @property (assign) BOOL isPdfDownloadActive;
+@property (assign) BOOL isViewInited;
+@property (assign) NSInteger downloadProgressPercent;
 
 @end
