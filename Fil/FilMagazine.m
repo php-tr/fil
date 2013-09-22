@@ -44,7 +44,7 @@
         [db open];
         
         NSUInteger i = 0;
-        FMResultSet *results = [db executeQuery:@"SELECT * FROM magazine"];
+        FMResultSet *results = [db executeQuery:@"SELECT * FROM magazine ORDER BY release_id DESC"];
         while ([results next])
         {
             MagazineData *data = [[MagazineData alloc] init];
@@ -125,7 +125,7 @@
         }
         
         NSArray *response = [dictionary objectForKey:@"response"];
-        NSUInteger i, listCount = 0, len = [response count];
+        NSInteger i, listCount = 0, len = [response count];
         NSMutableDictionary *list = [[NSMutableDictionary alloc] init];
         
         NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
@@ -136,7 +136,7 @@
         
         dispatch_queue_t imageLoadQueue = dispatch_queue_create("imageLoadQueue", DISPATCH_QUEUE_SERIAL);
         
-        for (i = 0; i < len; i++)
+        for (i = len - 1; i >= 0; i--)
         {
             NSDictionary *responseData = [response objectAtIndex:i];
             
