@@ -39,11 +39,13 @@
 		D061C9D917E4C0CF00D81F7F /* NSDictionary_JSONExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = D061C9D617E4C0CF00D81F7F /* NSDictionary_JSONExtensions.m */; settings = {COMPILER_FLAGS = "-fobjc-arc"; }; };
 		D061C9DC17E4C86400D81F7F /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D061C9DB17E4C86400D81F7F /* Security.framework */; };
 		D061C9DF17E4F4FE00D81F7F /* MagazineData.m in Sources */ = {isa = PBXBuildFile; fileRef = D061C9DE17E4F4FE00D81F7F /* MagazineData.m */; settings = {COMPILER_FLAGS = "-fobjc-arc"; }; };
-		D061C9E617E5E08200D81F7F /* FilDb.db in Resources */ = {isa = PBXBuildFile; fileRef = D061C9E517E5E08200D81F7F /* FilDb.db */; };
+		D061C9E617E5E08200D81F7F /* Fil.db in Resources */ = {isa = PBXBuildFile; fileRef = D061C9E517E5E08200D81F7F /* Fil.db */; };
 		D061C9E817E614C700D81F7F /* libsqlite3.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = D061C9E717E614C700D81F7F /* libsqlite3.0.dylib */; };
 		D061C9EA17E6278700D81F7F /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D061C9E917E6278700D81F7F /* SystemConfiguration.framework */; };
 		D061C9EC17E6278C00D81F7F /* MobileCoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D061C9EB17E6278C00D81F7F /* MobileCoreServices.framework */; };
 		D06EAB8217EB81DD00C19697 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = D04B262F17EB8194004D1C1B /* Localizable.strings */; };
+		D0936CEA17ECC68500502C73 /* Download.png in Resources */ = {isa = PBXBuildFile; fileRef = D0936CE817ECC68500502C73 /* Download.png */; };
+		D0936CEB17ECC68500502C73 /* View.png in Resources */ = {isa = PBXBuildFile; fileRef = D0936CE917ECC68500502C73 /* View.png */; };
 		D093D19917E23953001EE771 /* TransBK.png in Resources */ = {isa = PBXBuildFile; fileRef = D093D19817E23953001EE771 /* TransBK.png */; };
 		D093D19B17E23DA5001EE771 /* Refresh.png in Resources */ = {isa = PBXBuildFile; fileRef = D093D19A17E23DA5001EE771 /* Refresh.png */; };
 		D093D19D17E241B7001EE771 /* Banner.png in Resources */ = {isa = PBXBuildFile; fileRef = D093D19C17E241B7001EE771 /* Banner.png */; };
@@ -155,10 +157,12 @@
 		D061C9DB17E4C86400D81F7F /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		D061C9DD17E4F4FE00D81F7F /* MagazineData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MagazineData.h; sourceTree = "<group>"; };
 		D061C9DE17E4F4FE00D81F7F /* MagazineData.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MagazineData.m; sourceTree = "<group>"; };
-		D061C9E517E5E08200D81F7F /* FilDb.db */ = {isa = PBXFileReference; lastKnownFileType = file; path = FilDb.db; sourceTree = "<group>"; };
+		D061C9E517E5E08200D81F7F /* Fil.db */ = {isa = PBXFileReference; lastKnownFileType = file; path = Fil.db; sourceTree = "<group>"; };
 		D061C9E717E614C700D81F7F /* libsqlite3.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libsqlite3.0.dylib; path = usr/lib/libsqlite3.0.dylib; sourceTree = SDKROOT; };
 		D061C9E917E6278700D81F7F /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
 		D061C9EB17E6278C00D81F7F /* MobileCoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MobileCoreServices.framework; path = System/Library/Frameworks/MobileCoreServices.framework; sourceTree = SDKROOT; };
+		D0936CE817ECC68500502C73 /* Download.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Download.png; sourceTree = "<group>"; };
+		D0936CE917ECC68500502C73 /* View.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = View.png; sourceTree = "<group>"; };
 		D093D19817E23953001EE771 /* TransBK.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = TransBK.png; sourceTree = "<group>"; };
 		D093D19A17E23DA5001EE771 /* Refresh.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Refresh.png; sourceTree = "<group>"; };
 		D093D19C17E241B7001EE771 /* Banner.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Banner.png; sourceTree = "<group>"; };
@@ -442,6 +446,8 @@
 		D061C9E317E5DFB100D81F7F /* Asset */ = {
 			isa = PBXGroup;
 			children = (
+				D0936CE817ECC68500502C73 /* Download.png */,
+				D0936CE917ECC68500502C73 /* View.png */,
 				D093D1A017E25B90001EE771 /* Thumbnail.png */,
 				D093D19C17E241B7001EE771 /* Banner.png */,
 				D093D19A17E23DA5001EE771 /* Refresh.png */,
@@ -453,7 +459,7 @@
 		D061C9E417E5DFC400D81F7F /* Db */ = {
 			isa = PBXGroup;
 			children = (
-				D061C9E517E5E08200D81F7F /* FilDb.db */,
+				D061C9E517E5E08200D81F7F /* Fil.db */,
 			);
 			name = Db;
 			sourceTree = "<group>";
@@ -611,7 +617,7 @@
 				D093D19D17E241B7001EE771 /* Banner.png in Resources */,
 				D093D1A117E25B90001EE771 /* Thumbnail.png in Resources */,
 				D061C98717E3917300D81F7F /* Highway.ttf in Resources */,
-				D061C9E617E5E08200D81F7F /* FilDb.db in Resources */,
+				D061C9E617E5E08200D81F7F /* Fil.db in Resources */,
 				D0ED9EEA17EA3F420085B6D8 /* AppIcon-057.png in Resources */,
 				D0ED9EEB17EA3F420085B6D8 /* AppIcon-072.png in Resources */,
 				D0ED9EEC17EA3F420085B6D8 /* AppIcon-114.png in Resources */,
@@ -628,9 +634,11 @@
 				D0ED9EF717EA3F420085B6D8 /* Reader-Mark-Y.png in Resources */,
 				D0ED9EF817EA3F420085B6D8 /* Reader-Mark-Y@2x.png in Resources */,
 				D0ED9EF917EA3F420085B6D8 /* Reader-Print.png in Resources */,
+				D0936CEA17ECC68500502C73 /* Download.png in Resources */,
 				D0ED9EFA17EA3F420085B6D8 /* Reader-Print@2x.png in Resources */,
 				D0ED9EFB17EA3F420085B6D8 /* Reader-Thumbs.png in Resources */,
 				D0ED9EFC17EA3F420085B6D8 /* Reader-Thumbs@2x.png in Resources */,
+				D0936CEB17ECC68500502C73 /* View.png in Resources */,
 				D06EAB8217EB81DD00C19697 /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -9,9 +9,24 @@
 #import "MasterViewController.h"
 #import "ReaderViewController.h"
 
+#define VK_CELL_DATA @"cellData"
+#define VK_CELL_CONTAINER @"cellContainer"
+#define VK_CELL_IMAGE @"cellImage"
+#define VK_CELL_INDICATOR @"cellIndicator"
+#define VK_CELL_INDICATOR_TYPE @"cellIndicatorType"
+
+#define INDICATOR_TYPE_DOWNLOAD @"download"
+#define INDICATOR_TYPE_VIEW @"view"
+#define INDICATOR_TYPE_PROGRESS @"progress"
+
+#define TAG_VIEW_CONTAINER 100000
+#define TAG_IMAGE 1000000
+#define TAG_INDICATOR 10000000
+
 @interface MasterViewController() <ReaderViewControllerDelegate>
 {
-    NSMutableArray *_objects;
+    NSMutableArray *_magazineDataList;
+    NSMutableArray *_viewList;
 }
 @end
 
@@ -28,8 +43,13 @@
             self.contentSizeForViewInPopover = CGSizeMake(320.0, 600.0);
         }
         
+        _magazineDataList = [[NSMutableArray alloc] init];
+        _viewList = [[NSMutableArray alloc] init];
+        
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleMagazineList:) name:NOTIFICATION_MAGAZINE_LIST_SYNCED object:nil];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleDownloadComplete:) name:NOTIFICATION_MAGAZINE_DOWNLOAD_COMPLETE object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleImageDownloadComplete:) name:NOTIFICAITON_MAGAZINE_IMAGE_DONWLOAD_COMPLETE object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleDownloadProgress:) name:NOTIFICATION_MAGAZINE_DOWNLOAD_PROGRESS object:nil];
     }
     
     return self;
@@ -106,18 +126,15 @@
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-    return _objects.count;
+    return _magazineDataList.count;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    static NSInteger cellIdentifierSuffix = -1;
-    NSString *cellIdentifier = [NSString stringWithFormat:@"Cell_%d", ++cellIdentifierSuffix];
-    
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellIdentifier];
+    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:nil];
     if (cell == nil)
     {
-        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellIdentifier];
+        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
     }
 
     return cell;
@@ -125,27 +142,33 @@
 
 - (void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    MagazineData *data = (MagazineData *)[_objects objectAtIndex:0];
+    MagazineData *data = (MagazineData *)[_magazineDataList objectAtIndex:indexPath.row];
     
-    UIView *customView = [[UIView alloc] initWithFrame:CGRectMake(0.f, 5.f, cell.frame.size.width, cell.frame.size.height - 5.f)];
-    customView.backgroundColor = UICOLOR_FROM_HEX(0x5398cf);
-    customView.layer.masksToBounds = NO;
-    
-    NSURL *url = [NSURL URLWithString:data.imageUrl];
-    UIImage *thumbnail = [UIImage imageWithData:[NSData dataWithContentsOfURL:url]]; // [UIImage imageNamed:@"Thumbnail.png"];
-    [thumbnail stretchableImageWithLeftCapWidth:0 topCapHeight:0];
-    UIImageView *imageView = [[UIImageView alloc] initWithImage:thumbnail];
-    [imageView setFrame:CGRectMake(10.f, 5.f, thumbnail.size.width * 0.3f, thumbnail.size.height * 0.3f)];
-    [customView addSubview:imageView];
+    UIView *viewContainer = [[UIView alloc] initWithFrame:CGRectMake(0.f, 5.f, cell.frame.size.width, cell.frame.size.height - 5.f)];
+    [viewContainer setTag:TAG_VIEW_CONTAINER + data.releaseId];
+    viewContainer.backgroundColor = UICOLOR_FROM_HEX(0x5398cf);
+    viewContainer.layer.masksToBounds = NO;
     
     UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(70.f, 25.f, 170.f, 30.f)];
     [label setBackgroundColor:[UIColor clearColor]];
     [label setTextColor:[UIColor whiteColor]];
-    [label setText:data.name];
-    [label setFont:[UIFont fontWithName:@"TR Blue Highway" size:25]];
-    [customView addSubview:label];
-
-    [cell.contentView addSubview:customView];
+    [label setText:[NSString stringWithFormat:@"%d - %@", data.releaseId, data.name]];
+    [label setFont:[UIFont fontWithName:FONT_NAME size:25]];
+    [viewContainer addSubview:label];
+    
+    NSMutableDictionary *viewDict = [[NSMutableDictionary alloc] initWithDictionary: @{
+        VK_CELL_DATA: data,
+        VK_CELL_CONTAINER: [NSNumber numberWithInt:TAG_VIEW_CONTAINER + data.releaseId],
+        VK_CELL_IMAGE: [NSNull null],
+        VK_CELL_INDICATOR: [NSNull null],
+        VK_CELL_INDICATOR_TYPE: [NSNull null]
+    }];
+    FIL_LOG(@"View Dict: %@", viewDict);
+    [_viewList addObject:viewDict];
+    [cell.contentView addSubview:viewContainer];
+    
+    [self setIndicatorType:(data.isPdfDownloaded ? INDICATOR_TYPE_VIEW : INDICATOR_TYPE_DOWNLOAD) to:viewDict];
+    [self setImage:data to:viewDict];
 }
 
 - (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath
@@ -164,11 +187,15 @@
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    MagazineData *magazineData = (MagazineData *) _objects[indexPath.row];
-    FIL_LOG(@"Release Id %d.", magazineData.releaseId);
+    MagazineData *magazineData = (MagazineData *) _magazineDataList[indexPath.row];
+    FIL_LOG(@"Release Id %d, Pdf Download: %d.", magazineData.releaseId, magazineData.isPdfDownloaded ? 1 : 0);
     [tableView deselectRowAtIndexPath:indexPath animated:NO];
     
-    if (!magazineData.isPdfDownloaded)
+    if (magazineData.isPdfDownloadActive)
+    {
+        [[[UIAlertView alloc] initWithTitle:NSLocalizedString(@"Done", nil) message:NSLocalizedString(@"Pdf is downloading. You cannot open it for the moment", nil) delegate:self cancelButtonTitle:NSLocalizedString(@"OK", nil) otherButtonTitles:nil, nil] show];
+    }
+    else if (!magazineData.isPdfDownloaded)
     {
         NSDictionary *dict = @{@"magazineId": [NSNumber numberWithInt:magazineData.id]};
         [[NSNotificationCenter defaultCenter] postNotificationName:NOTIFICATION_MAGAZINE_DOWNLOAD object:nil userInfo:dict];
@@ -196,19 +223,15 @@
 - (void) handleMagazineList: (NSNotification *) notification
 {
     NSDictionary *magazineList = notification.userInfo;
-    if (!_objects)
-    {
-        _objects = [[NSMutableArray alloc] init];
-    }
     
     [self.tableView beginUpdates];
     
     NSMutableArray *paths = [NSMutableArray array];
-    NSUInteger start = [_objects count], i, len = [magazineList count];
+    NSUInteger start = [_magazineDataList count], i, len = [magazineList count];
     
     for (i = start; i < start + len; i++)
     {
-        [_objects addObject:[magazineList objectForKey:[NSString stringWithFormat:@"%d", i - start]]];
+        [_magazineDataList addObject:[magazineList objectForKey:[NSString stringWithFormat:@"%d", i - start]]];
         [paths addObject:[NSIndexPath indexPathForRow:i inSection:0]];
     }
     [self.tableView insertRowsAtIndexPaths:paths withRowAnimation:UITableViewRowAnimationNone];
@@ -218,7 +241,65 @@
 
 - (void) handleDownloadComplete: (NSNotification *) notification
 {
-    [self openPdf:[notification.userInfo objectForKey:@"data"]];
+    MagazineData *data = [notification.userInfo objectForKey:@"data"];
+    NSUInteger i, len = [_magazineDataList count];
+    for (i = 0; i < len; i++)
+    {
+        NSMutableDictionary *cellData = [_viewList objectAtIndex:i];
+        if (!cellData)
+        {
+            continue;
+        }
+        
+        if (((MagazineData *)[_magazineDataList objectAtIndex:i]).id == data.id)
+        {
+            [self setIndicatorType:INDICATOR_TYPE_VIEW to:cellData];
+            break;
+        }
+    }
+
+    [self openPdf:data];
+}
+
+- (void) handleImageDownloadComplete: (NSNotification *) notification
+{
+    MagazineData *data = [notification.userInfo objectForKey:@"magazineData"];
+    NSUInteger i, len = [_magazineDataList count], viewLen = [_viewList count];
+    for (i = 0; i < len; i++)
+    {
+        if (i >= viewLen - 1)
+        {
+            continue;
+        }
+        
+        NSMutableDictionary *cellData = [_viewList objectAtIndex:i];
+        if (((MagazineData *)[_magazineDataList objectAtIndex:i]).id == data.id)
+        {
+            [self setImage:data to:cellData];
+            break;
+        }
+    }
+}
+
+- (void) handleDownloadProgress: (NSNotification *) notification
+{
+    MagazineData *data = [notification.userInfo objectForKey:@"magazineData"];
+    NSUInteger i, len = [_magazineDataList count];
+    for (i = 0; i < len; i++)
+    {
+        NSMutableDictionary *cellData = [_viewList objectAtIndex:i];
+        if (!cellData)
+        {
+            continue;
+        }
+        
+        if (((MagazineData *)[_magazineDataList objectAtIndex:i]).id == data.id)
+        {
+            [self setIndicatorType:INDICATOR_TYPE_PROGRESS to:cellData];
+            [self setProgress:[[notification.userInfo objectForKey:@"percentage"] intValue] to:cellData];
+            break;
+        }
+    }
 }
 
 - (void) openPdf: (MagazineData *) data
@@ -235,6 +316,99 @@
 {
     [self.navigationController popViewControllerAnimated:YES];
     [self.navigationController setNavigationBarHidden:NO animated:YES];
+}
+
+- (void) setIndicatorType: (NSString *) type to: (NSMutableDictionary *) dict
+{
+    id indicatorType = [dict objectForKey:VK_CELL_INDICATOR_TYPE];
+    if (![indicatorType isKindOfClass:[NSNull class]] && [(NSString *)indicatorType isEqualToString:type])
+    {
+        return;
+    }
+    
+    UIView *viewContainer = [self.view viewWithTag:[[dict objectForKey:VK_CELL_CONTAINER] intValue]];
+    
+    id indicator = [dict objectForKey:VK_CELL_INDICATOR];
+    if (![indicator isKindOfClass:[NSNull class]])
+    {
+        [[self.view viewWithTag:[indicator intValue]] removeFromSuperview];
+    }
+    
+    MagazineData *data = [dict objectForKey:VK_CELL_DATA];
+    NSInteger tag = TAG_INDICATOR + data.releaseId;
+    
+    [dict setObject:type forKey:VK_CELL_INDICATOR_TYPE];
+    if ([type isEqualToString:INDICATOR_TYPE_DOWNLOAD])
+    {
+        UIImage *image = [UIImage imageNamed:@"Download"];
+        UIImageView *view = [[UIImageView alloc] initWithImage:image];
+        [view setFrame:CGRectMake(270.f, 25.f, image.size.width, image.size.height)];
+        [view setTag:tag];
+        [viewContainer addSubview:view];
+        
+        [dict setObject:[NSNumber numberWithInt:tag] forKey:VK_CELL_INDICATOR];
+    }
+    else if ([type isEqualToString:INDICATOR_TYPE_PROGRESS])
+    {
+        UILabel *view = [[UILabel alloc] initWithFrame:CGRectMake(265.f, 26.f, 50.f, 30.f)];
+        [view setBackgroundColor:[UIColor clearColor]];
+        [view setTextColor:[UIColor whiteColor]];
+        [view setText:@"0%"];
+        [view setTextAlignment:NSTextAlignmentCenter];
+        [view setFont:[UIFont fontWithName:FONT_NAME size:25]];
+        [view setTag:tag];
+        [viewContainer addSubview:view];
+        
+        [dict setObject:[NSNumber numberWithInt:tag] forKey:VK_CELL_INDICATOR];
+    }
+    else if ([type isEqualToString:INDICATOR_TYPE_VIEW])
+    {
+        UIImage *image = [UIImage imageNamed:@"View"];
+        UIImageView *view = [[UIImageView alloc] initWithImage:image];
+        [view setFrame:CGRectMake(270.f, 25.f, image.size.width, image.size.height)];
+        [view setTag:tag];
+        [viewContainer addSubview:view];
+        
+        [dict setObject:[NSNumber numberWithInt:tag] forKey:VK_CELL_INDICATOR];
+    }
+}
+
+- (void) setProgress: (NSInteger) percent to: (NSMutableDictionary *) dict
+{
+    [(UILabel *)[self.view viewWithTag:[[dict objectForKey:VK_CELL_INDICATOR] intValue]] setText:[NSString stringWithFormat:@"%d%%", percent]];
+}
+
+- (void) setImage: (MagazineData *) data to: (NSMutableDictionary *) dict
+{
+    id thumbnail = [dict objectForKey:VK_CELL_IMAGE];
+    if (![thumbnail isKindOfClass:[NSNull class]])
+    {
+        [[self.view viewWithTag:[[dict objectForKey:VK_CELL_IMAGE] intValue]] removeFromSuperview];
+    }
+    
+    UIView *viewContainer = [self.view viewWithTag:[[dict objectForKey:VK_CELL_CONTAINER] intValue]];
+    UIImage *image = nil;
+    UIImageView *imageView = nil;
+    NSInteger tag = TAG_IMAGE + ((MagazineData *)[dict objectForKey:VK_CELL_DATA]).releaseId;
+    if (data.isImageDownloaded)
+    {
+        image = [UIImage imageWithContentsOfFile:[[Util getDocumentPath] stringByAppendingPathComponent:data.imageName]];
+        [image stretchableImageWithLeftCapWidth:0 topCapHeight:0];
+        imageView = [[UIImageView alloc] initWithImage:image];
+        [imageView setTag:tag];
+        [imageView setFrame:CGRectMake(10.f, 5.f, image.size.width * 0.3f, image.size.height * 0.3f)];
+    }
+    else
+    {
+        image = [UIImage imageNamed:@"Thumbnail"];
+        [image stretchableImageWithLeftCapWidth:0 topCapHeight:0];
+        imageView = [[UIImageView alloc] initWithImage:image];
+        [imageView setTag:tag];
+        [imageView setFrame:CGRectMake(10.f, 15.f, image.size.width, image.size.height)];
+    }
+    
+    [viewContainer addSubview:imageView];
+    [dict setObject:[NSNumber numberWithInt:tag] forKey:VK_CELL_IMAGE];
 }
 
 @end

@@ -49,6 +49,7 @@
             data.id = [results intForColumn:@"magazine_id"];
             data.name = [results stringForColumn:@"name"];
             data.imageUrl = [results stringForColumn:@"image_url"];
+            data.imageName = [results stringForColumn:@"image_name"];
             data.pdfUrl = [results stringForColumn:@"pdf_url"];
             data.pdfName = [results stringForColumn:@"pdf_name"];
             data.releaseId = [results intForColumn:@"release_id"];
@@ -58,6 +59,7 @@
             data.size = [results longLongIntForColumn:@"size"];
             data.downloadDateline = [results longLongIntForColumn:@"download_dateline"] == 0 ? 0 : [[NSDate alloc] initWithTimeIntervalSince1970:[results longLongIntForColumn:@"download_dateline"]];
             data.syncDateline = [[NSDate alloc] initWithTimeIntervalSince1970:[results longLongIntForColumn:@"sync_dateline"]];
+            data.isPdfDownloadActive = NO;
             
             [_magazineList setObject:data forKey:[NSString stringWithFormat:@"%d", data.releaseId]];
             [list setObject:data forKey:[NSString stringWithFormat:@"%d", i++]];
@@ -118,7 +120,10 @@
         NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
         
         FMDatabase *db = [FMDatabase databaseWithPath:[Util getDbPath]];
+        db.traceExecution = YES;
         [db open];
+        
+        dispatch_queue_t imageLoadQueue = dispatch_queue_create("imageLoadQueue", DISPATCH_QUEUE_SERIAL);
         
         for (i = 0; i < len; i++)
         {
@@ -132,9 +137,10 @@
                 continue;
             }
 
-            MagazineData *magazineData = [[MagazineData alloc] init];
+            __block MagazineData *magazineData = [[MagazineData alloc] init];
             magazineData.name = [responseData objectForKey:@"ad"];
             magazineData.imageUrl = [responseData objectForKey:@"image"];
+            magazineData.imageName = [NSString stringWithFormat:@"%d.png", releaseId];
             magazineData.pdfUrl = [responseData objectForKey:@"pdf"];
             magazineData.pdfName = [NSString stringWithFormat:@"%d.pdf", releaseId];
             magazineData.releaseId = releaseId;
@@ -146,24 +152,74 @@
             [formatter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
             magazineData.releaseDate = [formatter dateFromString:[responseData objectForKey:@"tarih"]];
             
-            db.traceExecution = YES;
-            [db executeUpdate:@"INSERT INTO magazine (name, image_url, pdf_url, pdf_name, release_id, release_date, size, download_dateline, sync_dateline) VALUES (?, ?, ?, ?, ?, ?)",
-             magazineData.name,
-             magazineData.imageUrl,
-             magazineData.pdfUrl,
-             magazineData.pdfName,
-             [NSNumber numberWithInt:magazineData.releaseId],
-             [NSNumber numberWithLongLong:[magazineData.releaseDate timeIntervalSince1970]],
-             [NSNumber numberWithLongLong:magazineData.size],
-             [NSNumber numberWithLongLong:magazineData.downloadDateline ? [magazineData.downloadDateline timeIntervalSince1970] : 0],
-             [magazineData.syncDateline timeIntervalSince1970]
+            [db executeUpdate:@"\
+                INSERT INTO magazine \
+                    (name, image_url, image_name, is_image_downloaded, pdf_url, pdf_name, is_pdf_downloaded, release_id, release_date, size, download_dateline, sync_dateline) \
+                VALUES \
+                    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                magazineData.name,
+                magazineData.imageUrl,
+                magazineData.imageName,
+                [NSNumber numberWithInt:magazineData.isImageDownloaded ? 1 : 0],
+                magazineData.pdfUrl,
+                magazineData.pdfName,
+                [NSNumber numberWithInt:magazineData.isPdfDownloaded ? 1 : 0],
+                [NSNumber numberWithInt:magazineData.releaseId],
+                [NSNumber numberWithLongLong:[magazineData.releaseDate timeIntervalSince1970]],
+                [NSNumber numberWithLongLong:magazineData.size],
+                [NSNumber numberWithLongLong:magazineData.downloadDateline ? [magazineData.downloadDateline timeIntervalSince1970] : 0],
+                [NSNumber numberWithLongLong:magazineData.syncDateline ? [magazineData.syncDateline timeIntervalSince1970] : 0]
             ];
+            NSError *error = [db lastError];
+            if (error.code)
+            {
+                FIL_LOG(@"There is an error: %@", error);
+                continue;
+            }
+            
             magazineData.id = [db lastInsertRowId];
             
             [_magazineList setObject:magazineData forKey:[NSString stringWithFormat:@"%d", magazineData.releaseId]];
             [list setObject:magazineData forKey:[NSString stringWithFormat:@"%d", listCount++]];
+            
+            dispatch_async(imageLoadQueue, ^{
+                NSURL *url = [NSURL URLWithString:magazineData.imageUrl];
+                NSURLRequest *request = [NSURLRequest requestWithURL:url];
+                AFHTTPRequestOperation *operation = [[AFHTTPRequestOperation alloc] initWithRequest:request];
+                NSString *imagePath = [[Util getDocumentPath] stringByAppendingPathComponent:magazineData.imageName];
+                operation.outputStream = [NSOutputStream outputStreamToFileAtPath:imagePath append:NO];
+                [operation
+                    setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject)
+                    {
+                        FIL_LOG(@"Image Downloaded: %@, %d", magazineData.imageUrl, magazineData.id);
+                        
+                        magazineData.isImageDownloaded = YES;
+                        
+                        FMDatabase *db = [FMDatabase databaseWithPath:[Util getDbPath]];
+                        db.traceExecution = YES;
+                        [db open];
+                        [db
+                            executeUpdate:@"UPDATE magazine SET is_image_downloaded = ? WHERE magazine_id = ?",
+                            [NSNumber numberWithInt:magazineData.isImageDownloaded ? 1 : 0],
+                            [NSNumber numberWithInt:magazineData.id]
+                        ];
+                        [db close];
+                        
+                        double delayInSeconds = 2.0;
+                        dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
+                        dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+                            [[NSNotificationCenter defaultCenter] postNotificationName:NOTIFICAITON_MAGAZINE_IMAGE_DONWLOAD_COMPLETE object:nil userInfo:@{@"magazineData": magazineData}];
+                        });
+                        
+                    }
+                    failure:^(AFHTTPRequestOperation *operation, NSError *error)
+                    {
+                        FIL_LOG(@"Image Download Failed: %@", magazineData.imageUrl);
+                    }
+                 ];
+                [operation start];
+            });
         }
-
         [db close];
         
         if (listCount > 0)
@@ -210,7 +266,7 @@
     __strong __block MagazineData *data = [self getDataById:[[notification.userInfo objectForKey:@"magazineId"] intValue]];
     if (!data.isPdfDownloaded)
     {
-        NSString *pdfPath = [NSString stringWithFormat:@"%@/%d.pdf", [Util getDocumentPath], data.releaseId];
+        NSString *pdfPath = [[Util getDocumentPath] stringByAppendingPathComponent:data.pdfName];
         
         NSFileManager *fm = [NSFileManager defaultManager];
         if ([fm fileExistsAtPath:pdfPath])
@@ -231,15 +287,22 @@
         NSURL *url = [NSURL URLWithString:data.pdfUrl];
         NSURLRequest *request = [NSURLRequest requestWithURL:url];
         AFHTTPRequestOperation *operation = [[AFHTTPRequestOperation alloc] initWithRequest:request];
-        
+        __block int lastPercent = 0;
+        data.isPdfDownloadActive = YES;
         [operation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject)
         {
+            data.isPdfDownloadActive = NO;
             data.isPdfDownloaded = YES;
             data.downloadDateline = [[NSDate alloc] initWithTimeIntervalSinceNow:0];
             
             FMDatabase *db = [FMDatabase databaseWithPath:[Util getDbPath]];
             [db open];
-            [db executeUpdate:@"UPDATE magazine SET download_dateline = ?, is_pdf_downloaded = ? WHERE magazine_id = ?", [NSNumber numberWithLongLong:[data.downloadDateline timeIntervalSince1970]], [NSNumber numberWithInt:1], [NSNumber numberWithInt:data.id]];
+            [db
+                executeUpdate:@"UPDATE magazine SET download_dateline = ?, is_pdf_downloaded = ? WHERE magazine_id = ?",
+                [NSNumber numberWithLongLong:[data.downloadDateline timeIntervalSince1970]],
+                [NSNumber numberWithInt:1],
+                [NSNumber numberWithInt:data.id]
+            ];
             [db close];
             
             [[NSNotificationCenter defaultCenter] postNotificationName:NOTIFICATION_MAGAZINE_DOWNLOAD_COMPLETE object:nil userInfo:@{@"data": data}];
@@ -250,11 +313,18 @@
         }
         failure:^(AFHTTPRequestOperation *operation, NSError *error)
         {
+            data.isPdfDownloadActive = NO;
             FIL_LOG(@"Failed download.");
         }];
         [operation setDownloadProgressBlock:^(NSUInteger bytesRead, long long totalBytesRead, long long totalBytesExpectedToRead)
         {
             FIL_LOG(@"%u/%llu/%llu", bytesRead, totalBytesRead, totalBytesExpectedToRead);
+            int percent = ((float)totalBytesRead) / totalBytesExpectedToRead * 100.f;
+            if (lastPercent != percent)
+            {
+                [[NSNotificationCenter defaultCenter] postNotificationName:NOTIFICATION_MAGAZINE_DOWNLOAD_PROGRESS object:nil userInfo:@{@"percentage": [NSNumber numberWithInt:lastPercent], @"magazineData":data}];
+                lastPercent = percent;
+            }
         }];
         operation.outputStream = [NSOutputStream outputStreamToFileAtPath:pdfPath append:NO];
         [operation start];

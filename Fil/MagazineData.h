@@ -13,6 +13,7 @@
 @property (strong) NSString *name;
 @property (assign) NSInteger id;
 @property (strong) NSString *imageUrl;
+@property (strong) NSString *imageName;
 @property (strong) NSString *pdfUrl;
 @property (strong) NSString *pdfName;
 @property (assign) NSInteger releaseId;
@@ -22,5 +23,6 @@
 @property (assign) BOOL isImageDownloaded;
 @property (strong) NSDate *downloadDateline;
 @property (strong) NSDate *syncDateline;
+@property (assign) BOOL isPdfDownloadActive;
 
 @end

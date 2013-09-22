@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>EAC7ABF9-F031-4DB5-9AE4-137991A2269A</string>
+	<key>IDESourceControlProjectName</key>
+	<string>Fil</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>C2D93D7C-55FF-4424-9265-CFC1E6E24FBC</key>
+		<string>https://github.com/php-tr/fil-ios.git</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>Fil.xcodeproj/project.xcworkspace</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>C2D93D7C-55FF-4424-9265-CFC1E6E24FBC</key>
+		<string>../..</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>https://github.com/php-tr/fil-ios.git</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>110</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>C2D93D7C-55FF-4424-9265-CFC1E6E24FBC</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>C2D93D7C-55FF-4424-9265-CFC1E6E24FBC</string>
+			<key>IDESourceControlWCCName</key>
+			<string>Fil</string>
+		</dict>
+	</array>
+</dict>
+</plist>
