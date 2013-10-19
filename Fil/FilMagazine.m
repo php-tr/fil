@@ -231,7 +231,7 @@
         
         if (listCount > 0)
         {
-            [[NSNotificationCenter defaultCenter] postNotificationName:NOTIFICATION_MAGAZINE_LIST_SYNCED object:nil userInfo:list];
+            [[NSNotificationCenter defaultCenter] postNotificationName:NOTIFICATION_MAGAZINE_LIST_NEW object:nil userInfo:list];
         }
 
         _isRefreshInProgress = NO;

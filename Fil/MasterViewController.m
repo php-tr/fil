@@ -47,6 +47,7 @@
         _viewList = [[NSMutableDictionary alloc] init];
         
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleMagazineList:) name:NOTIFICATION_MAGAZINE_LIST_SYNCED object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleMagazineNew:) name:NOTIFICATION_MAGAZINE_LIST_NEW object:nil];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleDownloadComplete:) name:NOTIFICATION_MAGAZINE_DOWNLOAD_COMPLETE object:nil];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleImageDownloadComplete:) name:NOTIFICAITON_MAGAZINE_IMAGE_DONWLOAD_COMPLETE object:nil];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleDownloadProgress:) name:NOTIFICATION_MAGAZINE_DOWNLOAD_PROGRESS object:nil];
@@ -244,6 +245,42 @@
     FIL_LOG(@"Paths: %@", paths);
     [self.tableView insertRowsAtIndexPaths:paths withRowAnimation:UITableViewRowAnimationNone];
     
+    [self.tableView endUpdates];
+}
+
+- (void) handleMagazineNew: (NSNotification *) notification
+{
+    NSDictionary *magazineList = notification.userInfo;
+    
+    FIL_LOG(@"Adding New magazines. %d", [magazineList count]);
+    NSUInteger i, len = [magazineList count];
+    NSMutableArray *newDataList = [NSMutableArray array];
+    NSMutableArray *paths = [NSMutableArray array];
+    NSMutableDictionary *newViewList = [NSMutableDictionary dictionary];
+    
+    for (i = 0; i < len; i++)
+    {
+        [newDataList addObject:[magazineList objectForKey:[NSString stringWithFormat:@"%d", i]]];
+        [paths addObject:[NSIndexPath indexPathForRow:i inSection:0]];
+    }
+    
+    len = [_magazineDataList count];
+    for (i = 0; i < len; i++)
+    {
+        [newDataList addObject:[_magazineDataList objectAtIndex:i]];
+    }
+    
+    _magazineDataList = newDataList;
+    
+    NSString *key;
+    len = [magazineList count];
+    for (key in _viewList)
+    {
+        [newViewList setObject:[_viewList objectForKey:key] forKey:[NSString stringWithFormat:@"%d", [key intValue] + len]];
+    }
+    
+    [self.tableView beginUpdates];
+    [self.tableView insertRowsAtIndexPaths:paths withRowAnimation:UITableViewRowAnimationNone];
     [self.tableView endUpdates];
 }
 
