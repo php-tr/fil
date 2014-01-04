@@ -1,0 +1,11 @@
+"Done"			= "Çıkış";
+"%d of %d"		= "%1$d / %2$d";
+"Downloading" = "İndiriliyor";
+"Pdf is downloading. You cannot open it for the moment" = "Pdf indirilirken lütfen bekleyin";
+"OK" = "Tamam";
+"Pdf download failed" = "Pdf indirilemedi";
+"Error" = "Hata";
+"Download Confirmation" = "Indirmek icin Dogrulayin";
+"Are you sure to download magazine?" = "Dergiyi indirmek istediginize emin misiniz?";
+"Cancel" = "Iptal";
+"Download" = "Indir";
