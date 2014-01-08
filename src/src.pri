@@ -13,6 +13,12 @@ HEADERS += \
     $$PWD/NativeDialog.h \
     $$PWD/PdfReader.h
 
-OBJECTIVE_SOURCES += \
-    $$PWD/NativeDialog.mm \
-    $$PWD/PdfReader.mm
+ios {
+    OBJECTIVE_SOURCES += \
+        $$PWD/NativeDialog.mm \
+        $$PWD/PdfReader.mm
+} else: android {
+    SOURCES += \
+        $$PWD/PdfReader.cpp \
+        $$PWD/NativeDialog.cpp
+}

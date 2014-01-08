@@ -29,6 +29,7 @@ public:
     };
 
     explicit MagazineListModel(QObject *parent = 0);
+    ~MagazineListModel();
 
     Q_INVOKABLE void retrieveDataFromApi();
     Q_INVOKABLE QUrl getCachedImageUrl(QString imageUrl);
@@ -39,6 +40,7 @@ public:
     void setError(QString errorString);
     Q_INVOKABLE MagazineModel *getMagazineModelById(int id);
     int getIndexById(int id);
+    Q_INVOKABLE void saveToDb();
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
@@ -75,7 +77,6 @@ private:
     bool hasMagazineModel(MagazineModel *magazineModel);
 
     void loadFromDb();
-    void saveToDb();
 
     void downloadImage(QString imageUrl);
     QString getImageFilePath(QString fileName);

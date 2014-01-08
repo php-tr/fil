@@ -60,6 +60,7 @@ private:
 
 public:
     ApplicationInfo(ImageProvider *provider, QQmlEngine *qmlEngine);
+    ~ApplicationInfo();
 
     int applicationWidth() const;
     void setApplicationWidth(int newWidth);

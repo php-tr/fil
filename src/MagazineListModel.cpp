@@ -210,8 +210,6 @@ void MagazineListModel::loadData(QJsonArray data, bool checkUpdatedOnces)
     {
         endInsertRows();
     }
-
-    this->saveToDb();
 }
 
 QHash<int, QByteArray> MagazineListModel::roleNames() const
@@ -289,6 +287,8 @@ void MagazineListModel::loadFromDb()
 
 void MagazineListModel::saveToDb()
 {
+    qWarning() << "Saving to database";
+
     QFile file(this->_saveFilePath);
     if (file.open(QIODevice::WriteOnly | QIODevice::Text))
     {
@@ -404,5 +404,14 @@ void MagazineListModel::cancelDownload()
     {
         this->_currentDownloadNetworkReply->abort();
         this->_currentDownloadNetworkReply = 0;
+    }
+}
+
+MagazineListModel::~MagazineListModel()
+{
+    this->saveToDb();
+    for (int i = 0; i < this->_data.length(); i++)
+    {
+        this->_data.at(i)->deleteLater();
     }
 }

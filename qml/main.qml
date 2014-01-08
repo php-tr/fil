@@ -9,6 +9,18 @@ ApplicationWindow
     width: 1200
     height: 700
 
+    Connections
+    {
+        target: Qt.application
+        onStateChanged:
+        {
+            if (Qt.application.state === Qt.ApplicationSuspended)
+            {
+                ApplicationInfo.magazineListModel.saveToDb();
+            }
+        }
+    }
+
     property Component magazineListPage: MagazineList
     {
         onNextPage:

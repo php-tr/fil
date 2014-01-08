@@ -12,6 +12,11 @@ public:
     Q_INVOKABLE void confirmDownload(int id);
     int getId();
 
+    static NativeDialog *getInstance()
+    {
+        return _instance;
+    }
+
 Q_SIGNALS:
     void downloadConfirmed(int id);
 
@@ -21,6 +26,7 @@ public Q_SLOTS:
 private:
     void *_alertViewDelegate;
     int _id;
+    static NativeDialog *_instance;
 };
 
 #endif // CONFIRMBOX_H

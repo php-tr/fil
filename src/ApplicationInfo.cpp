@@ -81,3 +81,9 @@ PdfReader *ApplicationInfo::pdfReader() const
 {
     return this->_pdfReader;
 }
+
+ApplicationInfo::~ApplicationInfo()
+{
+    this->_magazineListModel->deleteLater();
+    this->_pdfReader->deleteLater();
+}

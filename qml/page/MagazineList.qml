@@ -80,7 +80,7 @@ BasicPage
             delegate: Rectangle
             {
                 id: listView
-                height: 100 * ApplicationInfo.ratio
+                height: 122 * ApplicationInfo.ratio
                 width: parent.width
                 color: ApplicationInfo.theme.magazineListBackgroundColor
                 opacity: mouseArea.pressed ? .8 : 1
@@ -118,14 +118,14 @@ BasicPage
                     columnSpacing: 0
                     rowSpacing: 0
                     columns: 1
-                    anchors.topMargin: rectSpacer.height * 2
+                    // anchors.topMargin: rectSpacer.height * 2
                     RowLayout
                     {
                         id: row
                         property bool hasPdf: ApplicationInfo.magazineListModel.getMagazineModelById(magazineId).isPdfDownloaded
 
-                        Layout.fillHeight: true
                         Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
                         spacing: 0
 
                         Item
@@ -136,8 +136,8 @@ BasicPage
 
                         Image
                         {
-                            width: 62  * ApplicationInfo.ratio
-                            height: 88  * ApplicationInfo.ratio
+                            width: 62 * ApplicationInfo.ratio
+                            height: 88 * ApplicationInfo.ratio
                             sourceSize.width: 62 * ApplicationInfo.ratio
                             sourceSize.height: 88  * ApplicationInfo.ratio
                             source: ApplicationInfo.magazineListModel.getCachedImageUrl(imageUrl)
@@ -153,7 +153,7 @@ BasicPage
                         {
                             text: magazine
                             font.family: ApplicationInfo.theme.primaryFont
-                            font.pixelSize: 36 * ApplicationInfo.ratio
+                            font.pixelSize: 42 * ApplicationInfo.ratio
                             Layout.alignment: Qt.AlignBaseline
                             color: ApplicationInfo.theme.bodyBackgroundColor
                         }
@@ -167,8 +167,8 @@ BasicPage
                         {
                             id: viewButton
                             source: ApplicationInfo.getAsset("view.png")
-                            Layout.preferredWidth: 72 * ApplicationInfo.ratio
-                            Layout.preferredHeight: 72 * ApplicationInfo.ratio
+                            Layout.preferredWidth: 120 * ApplicationInfo.ratio
+                            Layout.preferredHeight: 120 * ApplicationInfo.ratio
                             visible: row.hasPdf
                         }
 
@@ -176,8 +176,8 @@ BasicPage
                         {
                             id: downloadButton
                             source: ApplicationInfo.getAsset("download.png")
-                            Layout.preferredWidth: 72 * ApplicationInfo.ratio
-                            Layout.preferredHeight: 72 * ApplicationInfo.ratio
+                            Layout.preferredWidth: 120 * ApplicationInfo.ratio
+                            Layout.preferredHeight: 120 * ApplicationInfo.ratio
                             visible: !row.hasPdf
                         }
 

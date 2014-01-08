@@ -27,6 +27,17 @@ APP_FILES += \
     $$PWD/asset/close.png \
     $$PWD/asset/spinner.png
 
+APP_FILES += \
+    $$PWD/fonts/OpenSans-Bold.ttf \
+    $$PWD/fonts/OpenSans-Semibold.ttf \
+    $$PWD/fonts/OpenSans-Regular.ttf \
+    $$PWD/fonts/TR-Blue-Highway.ttf
+
+android {
+    APP_FILES += \
+        $$PWD/phrase-tr.qm
+}
+
 OTHER_FILES += $$APP_FILES
 
 
@@ -50,6 +61,7 @@ write_file($$QRE_FILE, QRE_CONTEXT)|error("Aborting. Could not save generated re
 RESOURCES += $$QRE_FILE
 
 ios {
+
     TRANS.files = $$PWD/phrase-tr.qm
     TRANS.path =
 
@@ -143,5 +155,13 @@ ios {
         $$PWD/ios/Library/PdfReader/Graphics/Reader-Thumbs@2x.png
 
     QMAKE_BUNDLE_DATA += LIB_IMAGES
+} else: android {
+
+    QT += androidextras
+
+    OTHER_FILES += \
+        android/AndroidManifest.xml
+
+    ANDROID_PACKAGE_SOURCE_DIR = $$PWD/android
 }
 

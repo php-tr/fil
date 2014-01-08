@@ -49,9 +49,39 @@ int main(int argc, char *argv[])
     // set orientation
     app.primaryScreen()->setOrientationUpdateMask(Qt::LandscapeOrientation | Qt::PortraitOrientation);
 
+    QString translationPath = QString("phrase-tr");
+
+#ifndef Q_OS_IOS
+    QFontDatabase::addApplicationFont(":/philip/fonts/OpenSans-Bold.ttf");
+    QFontDatabase::addApplicationFont(":/philip/fonts/OpenSans-Semibold.ttf");
+    int openSansId = QFontDatabase::addApplicationFont(":/philip/fonts/OpenSans-Regular.ttf");
+    QStringList loadedFontFamilies = QFontDatabase::applicationFontFamilies(openSansId);
+    if (!loadedFontFamilies.empty())
+    {
+        QString fontName = loadedFontFamilies.at(0);
+        QGuiApplication::setFont(QFont(fontName));
+    }
+    else
+    {
+        qWarning("Error: fail to load Open Sans font");
+    }
+    int trBlueHeighwayId = QFontDatabase::addApplicationFont(":/philip/fonts/TR-Blue-Highway.ttf");
+    QStringList highwayFamily = QFontDatabase::applicationFontFamilies(trBlueHeighwayId);
+    if (!highwayFamily.empty())
+    {
+        QGuiApplication::setFont(QFont(highwayFamily.at(0)));
+    }
+    else
+    {
+        qWarning("Error: fail to load TR Blue Highway font");
+    }
+
+    translationPath = ":/philip/phrase-tr";
+#endif
+
     // set translator
     QTranslator translator;
-    translator.load("phrase-tr");
+    translator.load(translationPath);
     qWarning() << "Translator Status: " << app.installTranslator(&translator);
 
     QTextCodec::setCodecForLocale(QTextCodec::codecForName("utf8"));
