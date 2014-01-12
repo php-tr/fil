@@ -33,6 +33,9 @@ APP_FILES += \
     $$PWD/fonts/OpenSans-Regular.ttf \
     $$PWD/fonts/TR-Blue-Highway.ttf
 
+APP_FILES += \
+    config.json
+
 android {
     APP_FILES += \
         $$PWD/phrase-tr.qm
@@ -86,8 +89,21 @@ ios {
         ICON
 
     QMAKE_INFO_PLIST = ios/iosInfo.plist
-    QMAKE_LFLAGS += -framework ImageIO -framework MessageUI
+    QMAKE_LFLAGS += \
+        -framework ImageIO \
+        -framework MessageUI \
+        -framework CoreData \
+        -framework SystemConfiguration \
+        -L$$PWD/ios/Library/Analytics/Add-ons/GoogleAnalyticsServicesiOS_3.0/ \
+        -lGoogleAnalyticsServices \
+        -lz
+
     QMAKE_CFLAGS += -fobjc-arc
+
+    HEADERS += \
+        $$PWD/ios/Library/Analytics/Add-ons/GoogleAnalyticsServicesiOS_3.0/GoogleAnalytics/Library/GAI.h \
+        $$PWD/ios/Library/Analytics/Add-ons/GoogleAnalyticsServicesiOS_3.0/GoogleAnalytics/Library/GAIDictionaryBuilder.h \
+        $$PWD/ios/Library/Analytics/Add-ons/GoogleAnalyticsServicesiOS_3.0/GoogleAnalytics/Library/GAIFields.h
 
     OBJECTIVE_HEADERS += \
         $$PWD/ios/Library/PdfReader/Sources/CGPDFDocument.h \

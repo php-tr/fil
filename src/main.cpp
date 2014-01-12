@@ -1,11 +1,14 @@
 #include <QGuiApplication>
 #include <QtQuick>
 #include <QtQml>
-
+#ifdef Q_OS_ANDROID
+#include <QtAndroidExtras/QtAndroidExtras>
+#endif
 #include "ApplicationInfo.h"
 #include "ImageProvider.h"
 #include "NativeDialog.h"
 #include "PdfReader.h"
+#include "Analytics.h"
 
 static const struct {
     const char *type;
@@ -26,7 +29,6 @@ static const struct {
     { "ModalMessage", 1, 0 }
 };
 
-
 static QObject *applicationProvider(QQmlEngine *qmlEngine, QJSEngine *jsEngine)
 {
     Q_UNUSED(jsEngine);
@@ -36,6 +38,36 @@ static QObject *applicationProvider(QQmlEngine *qmlEngine, QJSEngine *jsEngine)
 
     return new ApplicationInfo(provider, qmlEngine);
 }
+
+#ifdef Q_OS_ANDROID
+
+static void downloadConfirmed(JNIEnv *, jclass, jint magazineId)
+{
+    emit NativeDialog::getInstance()->downloadConfirmed((int) magazineId);
+}
+
+static JNINativeMethod methods[] =
+{
+    {"downloadConfirmed", "(I)V", (void *) downloadConfirmed}
+};
+
+int JNICALL JNI_OnLoad(JavaVM *vm, void *)
+{
+    JNIEnv *env;
+    if (vm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_4) != JNI_OK)
+    {
+        return JNI_FALSE;
+    }
+
+    jclass mainActivity = env->FindClass("org/phptr/philip/MainActivity");
+    if (env->RegisterNatives(mainActivity, methods, sizeof(methods) / sizeof(methods[0])))
+    {
+        return JNI_FALSE;
+    }
+
+    return JNI_VERSION_1_4;
+}
+#endif
 
 int main(int argc, char *argv[])
 {
@@ -92,6 +124,7 @@ int main(int argc, char *argv[])
     qmlRegisterType<MagazineListModel>(qmlPackage, 1, 0, "MagazineListModel");
     qmlRegisterType<NativeDialog>(qmlPackage, 1, 0, "NativeDialog");
     qmlRegisterType<MagazineModel>(qmlPackage, 1, 0, "MagazineModel");
+    qmlRegisterType<Analytics>(qmlPackage, 1, 0, "Analytics");
     // qmlRegisterType<Dialog>(qmlPackage, 1, 0, "PdfReader");
 
     for (int i = 0; i < int(sizeof(pages) / sizeof(pages[0])); i++)

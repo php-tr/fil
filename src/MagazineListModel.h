@@ -35,7 +35,7 @@ public:
     Q_INVOKABLE QUrl getCachedImageUrl(QString imageUrl);
     Q_INVOKABLE void downloadById(int id);
     Q_INVOKABLE void open(int id);
-    Q_INVOKABLE void cancelDownload();
+    Q_INVOKABLE int cancelDownload();
 
     void setError(QString errorString);
     Q_INVOKABLE MagazineModel *getMagazineModelById(int id);
@@ -52,7 +52,7 @@ Q_SIGNALS:
     void error(QString errorString);
     void downloadProgress(qint64 readed, qint64 total);
     void downloadCompleted(int id);
-    void downloadError();
+    void downloadError(QString errorString);
     void shouldCheckUpdate();
     void refreshError(QString errorString);
     void refreshed();
@@ -67,6 +67,7 @@ private:
     QNetworkAccessManager *_networkAccessManager;
     QNetworkAccessManager *_pdfNetworkAccess;
     MagazineModel *_currentDownloadableMagazineModel;
+    MagazineModel *_currentDownloadingMagazineModel;
     QNetworkReply *_currentDownloadNetworkReply;
     QString _refreshUrl;
 

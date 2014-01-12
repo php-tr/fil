@@ -5,9 +5,16 @@ import org.phptr.philip 1.0
 
 ApplicationWindow
 {
+    signal pageLoad(string pageTitle);
+
     id: root
     width: 1200
     height: 700
+
+    onPageLoad:
+    {
+        ApplicationInfo.analytics.sendViewEvent(pageTitle);
+    }
 
     Connections
     {
@@ -23,9 +30,15 @@ ApplicationWindow
 
     property Component magazineListPage: MagazineList
     {
+        id: magazineList
         onNextPage:
         {
             pageView.push(refreshPage);
+        }
+
+        Component.onCompleted:
+        {
+            root.pageLoad(magazineList.title);
         }
     }
 
@@ -42,6 +55,8 @@ ApplicationWindow
 
     property Component refreshPage: Refresh
     {
+        id: rfrsh
+
         onRefreshed:
         {
             delayedPop.interval = 2000;
@@ -61,11 +76,13 @@ ApplicationWindow
         id: pageView
         anchors.fill: parent
         initialItem: magazineListPage
+
         delegate: StackViewDelegate
         {
             function transitionFinished(properties)
             {
                 properties.exitItem.opacity = 1
+                root.pageLoad(properties.enterItem.title);
             }
 
             pushTransition: StackViewTransition

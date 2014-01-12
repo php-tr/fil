@@ -53,4 +53,7 @@
     <string name="copy_text">copy text</string>
     <string name="format_currently_not_supported">Format currently not supported</string>
     <string name="toggle_reflow_mode">Toggle reflow mode</string>
+    <string name="download_confirmation">Download Confirmation</string>
+    <string name="are_you_sure_to_download">Are you sure to download magazine?</string>
+    <string name="download">Download</string>
 </resources>

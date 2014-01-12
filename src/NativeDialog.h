@@ -19,6 +19,7 @@ public:
 
 Q_SIGNALS:
     void downloadConfirmed(int id);
+    void downloadCanceled(int id);
 
 public Q_SLOTS:
 

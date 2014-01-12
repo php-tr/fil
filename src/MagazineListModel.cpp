@@ -1,14 +1,16 @@
 
 #include "MagazineListModel.h"
 #include "ApplicationInfo.h"
+#include "ApplicationConfig.h"
 
 // class ApplicationInfo;
 
 MagazineListModel::MagazineListModel(QObject *parent) :
     QAbstractListModel(parent),
-    _currentDownloadNetworkReply(0),
-    _refreshUrl("http://fil.php-tr.com/mobile.php?type=pdf_list&token=iyeO0/tpdSKkpelwO1l1Jd01t2Qvr4nMek3TC43xEYw=")
+    _currentDownloadNetworkReply(0)
 {
+    this->_refreshUrl = ((ApplicationInfo *) this->parent())->config()->serviceUrl;
+
     this->_networkAccessManager = new QNetworkAccessManager(this);
     connect(this->_networkAccessManager, SIGNAL(finished(QNetworkReply *)), this, SLOT(handleNetworkReply(QNetworkReply *)));
 
@@ -103,12 +105,11 @@ void MagazineListModel::handlePdfDownload(QNetworkReply *reply)
     if (reply->error() != QNetworkReply::NoError)
     {
         qWarning() << "Error: " << reply->errorString();
-        emit this->downloadError();
+        emit this->downloadError(reply->errorString());
         return;
     }
 
-    QUrlQuery query(reply->url().query());
-    int id = query.queryItemValue("sayi").toInt();
+    int id = this->_currentDownloadingMagazineModel->getId();
 
     QString fileName = QString("%1.pdf").arg(id);
     QString filePath = QString("%1%2").arg(ApplicationInfo::getSettingPath()).arg(fileName);
@@ -123,8 +124,10 @@ void MagazineListModel::handlePdfDownload(QNetworkReply *reply)
     }
 
     // mark as downloaded
-    this->getMagazineModelById(id)->setPdfPath(fileName);
+    this->_currentDownloadingMagazineModel->setPdfPath(fileName);
     this->saveToDb();
+
+    this->_currentDownloadingMagazineModel = 0;
 
     emit this->downloadCompleted(id);
 
@@ -367,6 +370,7 @@ void MagazineListModel::downloadById(int id)
         connect(reply, SIGNAL(downloadProgress(qint64, qint64)), this, SLOT(handlePdfDownloadProgress(qint64, qint64)));
 
         this->_currentDownloadNetworkReply = reply;
+        this->_currentDownloadingMagazineModel = model;
     }
 }
 
@@ -398,13 +402,19 @@ int MagazineListModel::getIndexById(int id)
     return -1;
 }
 
-void MagazineListModel::cancelDownload()
+int MagazineListModel::cancelDownload()
 {
+    int id = -1;
     if (this->_currentDownloadNetworkReply)
     {
         this->_currentDownloadNetworkReply->abort();
         this->_currentDownloadNetworkReply = 0;
+
+        id = this->_currentDownloadingMagazineModel->getId();
+        this->_currentDownloadingMagazineModel = 0;
     }
+
+    return id;
 }
 
 MagazineListModel::~MagazineListModel()

@@ -13,6 +13,7 @@ Item
 
     property Component pageComponent;
     property string name;
+    property string title;
 
     property bool refreshButtonVisible: true
 

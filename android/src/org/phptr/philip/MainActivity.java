@@ -2,6 +2,7 @@ package org.phptr.philip;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.os.Bundle;
 import org.qtproject.qt5.android.bindings.QtActivity;
 
 public class MainActivity extends QtActivity
@@ -26,11 +27,11 @@ public class MainActivity extends QtActivity
             public void run()
             {
                 new AlertDialog.Builder(_instance)
-                        .setTitle("Download Confirmation")
+                        .setTitle(R.string.download_confirmation)
                         .setIcon(android.R.drawable.ic_dialog_alert)
-                        .setMessage("Are you sure to download magazine?")
+                        .setMessage(R.string.are_you_sure_to_download)
                         .setPositiveButton(
-                                "Download",
+                                R.string.download,
                                 new DialogInterface.OnClickListener()
                                 {
                                     @Override
@@ -41,7 +42,7 @@ public class MainActivity extends QtActivity
                                 }
                         )
                         .setNegativeButton(
-                                "Cancel",
+                                R.string.cancel,
                                 new DialogInterface.OnClickListener()
                                 {
                                     @Override

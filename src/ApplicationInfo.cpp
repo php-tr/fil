@@ -29,8 +29,10 @@ ApplicationInfo::ApplicationInfo(ImageProvider *provider, QQmlEngine *qmlEngine)
     this->_themeInfo->insert(QLatin1String("secondaryFont"), QVariant("Open Sans"));
     this->_themeInfo->insert(QLatin1String("modalBackgroundColor"), QVariant("#000000"));
 
+    this->_config = new ApplicationConfig(this);
     this->_magazineListModel = new MagazineListModel(this);
     this->_pdfReader = new PdfReader(this, this->_qmlEngine);
+    this->_analytics = new Analytics(this);
 }
 
 int ApplicationInfo::applicationWidth() const
@@ -82,8 +84,20 @@ PdfReader *ApplicationInfo::pdfReader() const
     return this->_pdfReader;
 }
 
+Analytics *ApplicationInfo::analytics() const
+{
+    return this->_analytics;
+}
+
+ApplicationConfig *ApplicationInfo::config() const
+{
+    return this->_config;
+}
+
 ApplicationInfo::~ApplicationInfo()
 {
     this->_magazineListModel->deleteLater();
     this->_pdfReader->deleteLater();
+    this->_analytics->deleteLater();
+    this->_config->deleteLater();
 }

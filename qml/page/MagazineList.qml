@@ -8,13 +8,15 @@ BasicPage
 {
     height: ApplicationInfo.applicationDefaultHeight
     name: "magazineList"
+    title: "Dergi Listesi"
 
     DownloadProgress
     {
         id: downloadProgressDialog
         onClosed:
         {
-            ApplicationInfo.magazineListModel.cancelDownload();
+            var id = ApplicationInfo.magazineListModel.cancelDownload();
+            ApplicationInfo.analytics.sendEvent("UX", "Indirme", "Iptal Edildi (Sayi: " + id + ")", id);
         }
     }
 
@@ -28,8 +30,14 @@ BasicPage
         id: dialog
         onDownloadConfirmed:
         {
+            ApplicationInfo.analytics.sendEvent("UX", "Indirme", "Onaylandi (Sayi: " + id + ")", id);
             downloadProgressDialog.open()
             ApplicationInfo.magazineListModel.downloadById(id);
+        }
+
+        onDownloadCanceled:
+        {
+            ApplicationInfo.analytics.sendEvent("UX", "Indirme", "Iptal Edildi (Sayi: " + id + ")", id);
         }
     }
 
@@ -39,6 +47,7 @@ BasicPage
         onDownloadCompleted:
         {
             downloadProgressDialog.close();
+            ApplicationInfo.analytics.sendEvent("UX", "Indirme", "Tamamlandi (Sayi: " + id + ")", id);
         }
 
         onDownloadProgress:
@@ -59,6 +68,8 @@ BasicPage
             downloadProgressDialog.close();
             modalMessageOverlay.messageText = qsTr("Error occured while downloading file");
             modalMessageOverlay.open();
+
+            ApplicationInfo.analytics.sendEvent("Hata", "Indirme", "Indirme Hatayla Sonuclandi. (" + errorString + ")");
         }
     }
 
@@ -95,10 +106,12 @@ BasicPage
                         if (!row.hasPdf)
                         {
                             dialog.confirmDownload(magazineId);
+                            ApplicationInfo.analytics.sendEvent("UX", "Indirme", "Onay Istemi (Sayi: " + magazineId + ")", magazineId);
                         }
                         else
                         {
                             ApplicationInfo.magazineListModel.open(magazineId);
+                            ApplicationInfo.analytics.sendEvent("UX", "Acilis", "Dergi (Sayi: " + magazineId + ")", magazineId);
                         }
                     }
                 }

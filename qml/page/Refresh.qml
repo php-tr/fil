@@ -15,6 +15,7 @@ BasicPage
 
     height: ApplicationInfo.applicationDefaultHeight
     name: "refresh"
+    title: "Yenileme"
     refreshButtonVisible: false
 
     Connections

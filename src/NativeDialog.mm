@@ -26,6 +26,10 @@
     {
         emit _dialog->downloadConfirmed(_dialog->getId());
     }
+    else
+    {
+        emit _dialog->downloadCanceled(_dialog->getId());
+    }
 }
 
 @end

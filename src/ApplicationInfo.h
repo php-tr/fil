@@ -16,6 +16,8 @@
 #include <QtCore/QStringList>
 #include "MagazineListModel.h"
 #include "PdfReader.h"
+#include "Analytics.h"
+#include "ApplicationConfig.h"
 
 class ImageProvider;
 
@@ -29,6 +31,7 @@ class ApplicationInfo : public QObject
     Q_PROPERTY(QObject *theme READ themeInfo CONSTANT)
     Q_PROPERTY(QObject *magazineListModel READ magazineListModel CONSTANT)
     Q_PROPERTY(QObject *pdfReader READ pdfReader CONSTANT)
+    Q_PROPERTY(QObject *analytics READ analytics CONSTANT)
 
 private:
     int _applicationWidth;
@@ -40,6 +43,8 @@ private:
     ImageProvider *_imageProvider;
     PdfReader *_pdfReader;
     QQmlEngine *_qmlEngine;
+    Analytics *_analytics;
+    ApplicationConfig *_config;
 
     inline static QString getPath(QStandardPaths::StandardLocation location)
     {
@@ -73,6 +78,8 @@ public:
     QQmlPropertyMap *themeInfo() const;
     MagazineListModel *magazineListModel() const;
     PdfReader *pdfReader() const;
+    Analytics *analytics() const;
+    ApplicationConfig *config() const;
 
     Q_INVOKABLE QString getAsset(const QString assetName) const;
 
