@@ -45,7 +45,7 @@ BasicPage
             {
                 id: statusLabel
                 anchors.centerIn: parent
-                font.pointSize: 32 * ApplicationInfo.ratio
+                font.pixelSize: 32 * ApplicationInfo.ratio
                 font.family: ApplicationInfo.theme.secondaryFont
                 text: refreshPageContainer.statusText
                 color: ApplicationInfo.theme.magazineListBackgroundColor
