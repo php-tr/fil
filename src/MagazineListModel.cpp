@@ -2,6 +2,7 @@
 #include "MagazineListModel.h"
 #include "ApplicationInfo.h"
 #include "ApplicationConfig.h"
+#include <QtCore/QVector>
 
 // class ApplicationInfo;
 
@@ -69,6 +70,7 @@ void MagazineListModel::handleNetworkReply(QNetworkReply *reply)
             if (data["success"].isBool() && data["success"].toBool())
             {
                 this->loadData(data["response"].toArray(), true);
+                this->saveToDb();
                 errorOccured = false;
             }
             else
@@ -160,7 +162,8 @@ void MagazineListModel::open(int id)
 
 void MagazineListModel::retrieveDataFromApi()
 {
-    this->_networkAccessManager->get(QNetworkRequest(QUrl("http://fil.php-tr.com/mobile.php?type=pdf_list&token=iyeO0/tpdSKkpelwO1l1Jd01t2Qvr4nMek3TC43xEYw=")));
+    QString serviceUrl = ((ApplicationInfo *) this->parent())->config()->serviceUrl;
+    this->_networkAccessManager->get(QNetworkRequest(QUrl(serviceUrl)));
 }
 
 int MagazineListModel::rowCount(const QModelIndex &parent) const
@@ -171,22 +174,30 @@ int MagazineListModel::rowCount(const QModelIndex &parent) const
 
 void MagazineListModel::loadData(QJsonArray data, bool checkUpdatedOnces)
 {
-    int i, len = data.count(), id;
-    bool startedAddingIndex = false;
+    int i, len = data.count(), id, newAdded = 0, rowCount = this->rowCount();
     MagazineModel *magazineModel;
     QJsonObject currentObject;
+    QVector<QJsonObject> dataVec;
+
+    qWarning() << "CheckUpdated: " << (checkUpdatedOnces ? "YES" : "NO");
+
+    for (i = len - 1; i >= 0; i--)
+    {
+        dataVec.append(data.at(i).toObject());
+    }
 
     for (i = 0; i < len; i++)
     {
-        magazineModel = new MagazineModel(this);
-        currentObject = data.at(i).toObject();
+        currentObject = dataVec.at(i);
 
         id = currentObject["id"].isString() ? currentObject["id"].toString().toInt() : currentObject["id"].toInt();
-        if (checkUpdatedOnces && this->getMagazineModelById(id))
+        if (this->getMagazineModelById(id))
         {
+            qWarning() << "Id Skipped: " << id;
             continue;
         }
 
+        magazineModel = new MagazineModel(this);
         magazineModel->setData(
             id,
             currentObject["ad"].toString(),
@@ -202,16 +213,14 @@ void MagazineListModel::loadData(QJsonArray data, bool checkUpdatedOnces)
         this->addMagazineModel(magazineModel);
         // qDebug() << QString("Added magazine model: %1").arg(currentObject["ad"].toString());
 
-        if (checkUpdatedOnces)
-        {
-            beginInsertRows(QModelIndex(), 0, this->rowCount() - 1);
-            startedAddingIndex = true;
-        }
+        newAdded++;
     }
 
-    if (startedAddingIndex)
+    if (newAdded > 0)
     {
-        endInsertRows();
+        qWarning() << "Adding news: " << newAdded;
+        this->beginInsertRows(QModelIndex(), 0, newAdded - 1);
+        this->endInsertRows();
     }
 }
 
@@ -270,7 +279,7 @@ bool MagazineListModel::setData(const QModelIndex &index, const QVariant &value,
 
 void MagazineListModel::addMagazineModel(MagazineModel *magazineModel)
 {
-    this->_data.append(magazineModel);
+    this->_data.insert(0, magazineModel);
 }
 
 bool MagazineListModel::hasMagazineModel(MagazineModel *magazineModel)
@@ -281,26 +290,29 @@ bool MagazineListModel::hasMagazineModel(MagazineModel *magazineModel)
 void MagazineListModel::loadFromDb()
 {
     QFile file(this->_saveFilePath);
+    qWarning() << "Save File: " << this->_saveFilePath;
     if (file.exists() && file.open(QIODevice::ReadOnly | QIODevice::Text))
     {
-        this->loadData(QJsonDocument::fromJson(file.readAll()).array());
+        this->loadData(QJsonDocument::fromJson(file.readAll()).array(), false);
         file.close();
     }
 }
 
 void MagazineListModel::saveToDb()
 {
-    qWarning() << "Saving to database";
+    qWarning() << "Saving into database";
 
     QFile file(this->_saveFilePath);
     if (file.open(QIODevice::WriteOnly | QIODevice::Text))
     {
+        qWarning() << "Db Opened";
+
         QJsonDocument doc;
         QJsonArray response;
         MagazineModel *model;
 
         QTextStream out(&file);
-        for (int i = 0; i < this->_data.length(); i++)
+        for (int i = 0; i < this->_data.count(); i++)
         {
             model = this->_data.at(i);
             QJsonObject obj;
@@ -320,9 +332,14 @@ void MagazineListModel::saveToDb()
         doc.setArray(response);
 
         // qDebug() << QString("Data to Save into %1").arg(this->_saveFilePath);
-        // qDebug() << doc.toJson();
+        // qWarning() << "JSON: " << doc.toJson();
         out << doc.toJson();
         file.close();
+
+    }
+    else
+    {
+        qWarning() << "Db Could not opened";
     }
 }
 

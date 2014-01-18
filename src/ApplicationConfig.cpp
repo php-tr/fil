@@ -12,7 +12,7 @@ ApplicationConfig::ApplicationConfig(QObject *parent) :
 {
     bool gotConfig = false;
 
-    this->serviceUrl = "http://fil.php-tr.com/mobile.php?type=pdf_list&token=iyeO0/tpdSKkpelwO1l1Jd01t2Qvr4nMek3TC43xEYw=";
+    // this->serviceUrl = "http://fil.php-tr.com/mobile.php?type=pdf_list&token=iyeO0/tpdSKkpelwO1l1Jd01t2Qvr4nMek3TC43xEYw=";
 
     QFile file(":/philip/config.json");
     if (file.exists() && file.open(QIODevice::ReadOnly | QIODevice::Text))
