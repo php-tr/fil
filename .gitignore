@@ -1,4 +1,5 @@
 .DS_Store
-philip.pro.user
+*.user
 .idea
 *.iml
+build-*
